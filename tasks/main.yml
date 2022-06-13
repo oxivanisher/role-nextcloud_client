@@ -3,7 +3,7 @@
 - name: remove old repository
   ansible.builtin.apt_repository:
     repo: "{{ item }}"
-    update_cache: yes
+    update_cache: true
     state: absent
     mode: 644
   loop:
@@ -18,10 +18,9 @@
   ansible.builtin.apt_repository:
     repo: ppa:nextcloud-devs/client
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: install agent
   ansible.builtin.package:
     name: nextcloud-client
     state: present
-
