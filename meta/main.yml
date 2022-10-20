@@ -1,5 +1,6 @@
 galaxy_info:
   role_name: nextcloud_client
+  namespace: oxivanisher
   author: Marc Urben
   description: install nextcloud desktop client
   company: Thunderbluff
