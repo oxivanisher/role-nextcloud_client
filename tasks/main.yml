@@ -13,10 +13,11 @@
   ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
     id: 1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469
+    keyring: /usr/share/keyrings/nextcloud.gpg
 
 - name: add nextcloud PPA repository
   ansible.builtin.apt_repository:
-    repo: ppa:nextcloud-devs/client
+    repo: [signed-by=/usr/share/keyrings/nextcloud.gpg] ppa:nextcloud-devs/client
     state: present
     update_cache: true
 
