@@ -1,6 +1,6 @@
 ---
 
-- name: remove old repository
+- name: Remove old repository
   ansible.builtin.apt_repository:
     repo: "{{ item }}"
     update_cache: true
@@ -9,19 +9,19 @@
   loop:
     - deb http://download.opensuse.org/repositories/home:/ivaradi/Debian_9.0_update/ /
 
-- name: add nextcloud ppa apt key
+- name: Add nextcloud ppa apt key
   ansible.builtin.apt_key:
     keyserver: keyserver.ubuntu.com
     id: 1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469
     keyring: /usr/share/keyrings/nextcloud.gpg
 
-- name: add nextcloud PPA repository
+- name: Add nextcloud PPA repository
   ansible.builtin.apt_repository:
     repo: [signed-by=/usr/share/keyrings/nextcloud.gpg] ppa:nextcloud-devs/client
     state: present
     update_cache: true
 
-- name: install agent
+- name: Install agent
   ansible.builtin.package:
     name: nextcloud-client
     state: present
