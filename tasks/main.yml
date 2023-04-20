@@ -17,7 +17,7 @@
 
 - name: Add nextcloud PPA repository
   ansible.builtin.apt_repository:
-    repo: [signed-by=/usr/share/keyrings/nextcloud.gpg] ppa:nextcloud-devs/client
+    repo: "[signed-by=/usr/share/keyrings/nextcloud.gpg] ppa:nextcloud-devs/client"
     state: present
     update_cache: true
 
