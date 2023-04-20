@@ -9,11 +9,10 @@
   loop:
     - deb http://download.opensuse.org/repositories/home:/ivaradi/Debian_9.0_update/ /
 
-# - name: Add nextcloud ppa apt key
-#   ansible.builtin.apt_key:
-#     keyserver: keyserver.ubuntu.com
-#     id: 1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469
-#     keyring: /usr/share/keyrings/nextcloud.gpg
+- name: Add nextcloud ppa apt key
+  ansible.builtin.apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469
 
 - name: Add nextcloud PPA repository
   ansible.builtin.apt_repository:
