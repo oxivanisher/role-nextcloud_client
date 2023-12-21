@@ -1,9 +1,4 @@
 ---
-- name: Remove legacy apt file
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/ppa_nextcloud_devs_client_jammy.list
-    state: absent
-
 - name: Add Nextcloud repo using key from URL
   ansible.builtin.deb822_repository:
     name: nextcloud-devs-ppa
