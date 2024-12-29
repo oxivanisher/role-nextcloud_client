@@ -14,7 +14,9 @@
 
 - name: Install agent
   ansible.builtin.apt:
-    name: nextcloud-client
+    name:
+      - nextcloud-client
+      - nautilus-nextcloud
     state: present
     update_cache: true
   ignore_errors: "{{ ansible_check_mode }}"
