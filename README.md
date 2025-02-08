@@ -1,5 +1,6 @@
 nextcloud_client
 ================
+[![Ansible Lint](https://github.com/oxivanisher/role-nextcloud_client/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/oxivanisher/role-nextcloud_client/actions/workflows/ansible-lint.yml)
 
 Configures the [nextcloud ppa](https://launchpad.net/~nextcloud-devs/+archive/ubuntu/client) repository and installs the client.
 
