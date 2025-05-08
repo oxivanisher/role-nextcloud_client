@@ -33,11 +33,24 @@
   become: true
   become_user: root
 
-- name: Install agent
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Build list of nextcloud packages to install
+  ansible.builtin.set_fact:
+    nextcloud_packages: >-
+      {{
+        ['nextcloud-client'] +
+        (['nautilus-nextcloud'] if 'nautilus' in ansible_facts.packages else []) +
+        (['dolphin-nextcloud'] if 'dolphin' in ansible_facts.packages else []) +
+        (['nemo-nextcloud'] if 'nemo' in ansible_facts.packages else []) +
+        (['caja-nextcloud'] if 'caja' in ansible_facts.packages else [])
+      }}
+
+- name: Install nextcloud client and extensions
   ansible.builtin.apt:
-    name:
-      - nextcloud-client
-      - nautilus-nextcloud
+    name: "{{ nextcloud_packages }}"
     state: present
     update_cache: true
   ignore_errors: "{{ ansible_check_mode }}"
