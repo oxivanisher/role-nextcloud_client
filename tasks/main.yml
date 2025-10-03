@@ -29,7 +29,7 @@
           if upstream_release_file.stat.exists
           else ansible_distribution_release }}
 
-- name: Install only on supported distros
+- name: Install nextcloud-client only on supported distros
   when: dist_codename in ppa_codenames
   block:
 
