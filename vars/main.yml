@@ -1,3 +1,3 @@
 ---
 # vars file for nextcloud_client
-nextcloud_client_ppaurl: https://ppa.launchpadcontent.net/nextcloud-devs/client/ubuntu/dists/
+nextcloud_client_ppaurl: https://ppa.launchpadcontent.net/nextcloud-devs/client/ubuntu
