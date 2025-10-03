@@ -1,65 +1,98 @@
 ---
 
-- name: Read upstream-release file on Linux mint
+- name: Fetch Nextcloud PPA dists listing
+  ansible.builtin.uri:
+    url: https://ppa.launchpadcontent.net/nextcloud-devs/client/ubuntu/dists/
+    return_content: yes
+  register: ppa_listing
+
+- name: Parse codename list from HTML
+  ansible.builtin.set_fact:
+    ppa_codenames: "{{ ppa_listing.content | regex_findall('\\b([a-z]+?)/</a>') | unique }}"
+
+- name: Check if upstream-release file exists
+  ansible.builtin.stat:
+    path: /etc/upstream-release/lsb-release
+  register: upstream_release_file
+
+- name: Read upstream-release file if present
   ansible.builtin.slurp:
-    src: /etc/upstream-release/lsb-release
-  register: lsb_release_raw
-  when: ansible_distribution|lower == "linux mint"
+    path: /etc/upstream-release/lsb-release
+  register: upstream_release_raw
+  when: upstream_release_file.stat.exists
 
-- name: Decode and parse DISTRIB_CODENAME from upstream-release file on Linux mint
+- name: Extract upstream codename
   ansible.builtin.set_fact:
-    real_os_release: >-
-      {{ (lsb_release_raw.content | b64decode).splitlines()
-         | select('match', '^DISTRIB_CODENAME=')
-         | map('regex_replace', '^DISTRIB_CODENAME=', '')
-         | list | first | lower }}
-  when: ansible_distribution|lower == "linux mint"
+    dist_codename: >-
+      {{ (upstream_release_raw.content | b64decode |
+          regex_search('^DISTRIB_CODENAME=(\\w+)', '\\1', multiline=True))
+          if upstream_release_file.stat.exists
+          else ansible_distribution_release }}
 
-- name: Set distribution release on other distributions than linux mint
-  ansible.builtin.set_fact:
-    real_os_release: "{{ ansible_distribution_release | lower }}"
-  when: ansible_distribution|lower != "linux mint"
+- name: Install only on supported distros
+  when: dist_codename in ppa_codenames
+  block:
 
-- name: Ensure python3-debian is installed
-  ansible.builtin.package:
-    name: python3-debian
-    state: present
-  become: true
-  become_user: root
+    - name: Read upstream-release file on Linux mint
+      ansible.builtin.slurp:
+        src: /etc/upstream-release/lsb-release
+      register: lsb_release_raw
+      when: ansible_distribution|lower == "linux mint"
 
-- name: Add Nextcloud repo using key from URL
-  ansible.builtin.deb822_repository:
-    name: nextcloud-devs-ppa
-    types: [deb, deb-src]
-    uris: "https://ppa.launchpadcontent.net/nextcloud-devs/client/ubuntu"
-    suites: ["{{ real_os_release }}"]
-    components: [main]
-    signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469"
-    state: present
-    enabled: true
-  become: true
-  become_user: root
+    - name: Decode and parse DISTRIB_CODENAME from upstream-release file on Linux mint
+      ansible.builtin.set_fact:
+        real_os_release: >-
+          {{ (lsb_release_raw.content | b64decode).splitlines()
+            | select('match', '^DISTRIB_CODENAME=')
+            | map('regex_replace', '^DISTRIB_CODENAME=', '')
+            | list | first | lower }}
+      when: ansible_distribution|lower == "linux mint"
 
-- name: Gather the package facts
-  ansible.builtin.package_facts:
-    manager: auto
+    - name: Set distribution release on other distributions than linux mint
+      ansible.builtin.set_fact:
+        real_os_release: "{{ ansible_distribution_release | lower }}"
+      when: ansible_distribution|lower != "linux mint"
 
-- name: Build list of nextcloud packages to install
-  ansible.builtin.set_fact:
-    nextcloud_packages: >-
-      {{
-        ['nextcloud-client'] +
-        (['nautilus-nextcloud'] if 'nautilus' in ansible_facts.packages else []) +
-        (['dolphin-nextcloud'] if 'dolphin' in ansible_facts.packages else []) +
-        (['nemo-nextcloud'] if 'nemo' in ansible_facts.packages else []) +
-        (['caja-nextcloud'] if 'caja' in ansible_facts.packages else [])
-      }}
+    - name: Ensure python3-debian is installed
+      ansible.builtin.package:
+        name: python3-debian
+        state: present
+      become: true
+      become_user: root
 
-- name: Install nextcloud client and extensions
-  ansible.builtin.apt:
-    name: "{{ nextcloud_packages }}"
-    state: present
-    update_cache: true
-  ignore_errors: "{{ ansible_check_mode }}"
-  become: true
-  become_user: root
+    - name: Add Nextcloud repo using key from URL
+      ansible.builtin.deb822_repository:
+        name: nextcloud-devs-ppa
+        types: [deb, deb-src]
+        uris: "https://ppa.launchpadcontent.net/nextcloud-devs/client/ubuntu"
+        suites: ["{{ real_os_release }}"]
+        components: [main]
+        signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469"
+        state: present
+        enabled: true
+      become: true
+      become_user: root
+
+    - name: Gather the package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Build list of nextcloud packages to install
+      ansible.builtin.set_fact:
+        nextcloud_packages: >-
+          {{
+            ['nextcloud-client'] +
+            (['nautilus-nextcloud'] if 'nautilus' in ansible_facts.packages else []) +
+            (['dolphin-nextcloud'] if 'dolphin' in ansible_facts.packages else []) +
+            (['nemo-nextcloud'] if 'nemo' in ansible_facts.packages else []) +
+            (['caja-nextcloud'] if 'caja' in ansible_facts.packages else [])
+          }}
+
+    - name: Install nextcloud client and extensions
+      ansible.builtin.apt:
+        name: "{{ nextcloud_packages }}"
+        state: present
+        update_cache: true
+      ignore_errors: "{{ ansible_check_mode }}"
+      become: true
+      become_user: root
