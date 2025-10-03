@@ -2,7 +2,7 @@
 
 - name: Fetch Nextcloud PPA dists listing
   ansible.builtin.uri:
-    url: https://ppa.launchpadcontent.net/nextcloud-devs/client/ubuntu/dists/
+    url: "{{ nextcloud_client_ppaurl }}"
     return_content: true
   register: ppa_listing
 
@@ -42,10 +42,10 @@
     - name: Decode and parse DISTRIB_CODENAME from upstream-release file on Linux mint
       ansible.builtin.set_fact:
         real_os_release: >-
-          {{ (lsb_release_raw.content | b64decode).splitlines()
-            | select('match', '^DISTRIB_CODENAME=')
-            | map('regex_replace', '^DISTRIB_CODENAME=', '')
-            | list | first | lower }}
+          {{ (upstream_release_raw.content | b64decode |
+              regex_search('^DISTRIB_CODENAME=(\\w+)', '\\1', multiline=True) | default(''))
+              if upstream_release_file.stat.exists
+              else ansible_distribution_release }}
       when: ansible_distribution|lower == "linux mint"
 
     - name: Set distribution release on other distributions than linux mint
@@ -64,7 +64,7 @@
       ansible.builtin.deb822_repository:
         name: nextcloud-devs-ppa
         types: [deb, deb-src]
-        uris: "https://ppa.launchpadcontent.net/nextcloud-devs/client/ubuntu"
+        uris: "{{ nextcloud_client_ppaurl }}"
         suites: ["{{ real_os_release }}"]
         components: [main]
         signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469"
