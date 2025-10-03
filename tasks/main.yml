@@ -25,33 +25,13 @@
   ansible.builtin.set_fact:
     dist_codename: >-
       {{ (upstream_release_raw.content | b64decode |
-          regex_search('^DISTRIB_CODENAME=(\\w+)', '\\1', multiline=True))
+          regex_search('^DISTRIB_CODENAME=(\\w+)', '\\1', multiline=True) | default(''))
           if upstream_release_file.stat.exists
           else ansible_distribution_release }}
 
 - name: Install nextcloud-client only on supported distros
   when: dist_codename in ppa_codenames
   block:
-
-    - name: Read upstream-release file on Linux mint
-      ansible.builtin.slurp:
-        src: /etc/upstream-release/lsb-release
-      register: lsb_release_raw
-      when: ansible_distribution|lower == "linux mint"
-
-    - name: Decode and parse DISTRIB_CODENAME from upstream-release file on Linux mint
-      ansible.builtin.set_fact:
-        real_os_release: >-
-          {{ (upstream_release_raw.content | b64decode |
-              regex_search('^DISTRIB_CODENAME=(\\w+)', '\\1', multiline=True) | default(''))
-              if upstream_release_file.stat.exists
-              else ansible_distribution_release }}
-      when: ansible_distribution|lower == "linux mint"
-
-    - name: Set distribution release on other distributions than linux mint
-      ansible.builtin.set_fact:
-        real_os_release: "{{ ansible_distribution_release | lower }}"
-      when: ansible_distribution|lower != "linux mint"
 
     - name: Ensure python3-debian is installed
       ansible.builtin.package:
