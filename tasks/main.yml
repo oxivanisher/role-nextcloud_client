@@ -3,7 +3,7 @@
 - name: Fetch Nextcloud PPA dists listing
   ansible.builtin.uri:
     url: https://ppa.launchpadcontent.net/nextcloud-devs/client/ubuntu/dists/
-    return_content: yes
+    return_content: true
   register: ppa_listing
 
 - name: Parse codename list from HTML
