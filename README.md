@@ -11,7 +11,7 @@ None
 
 Example Playbook
 ----------------
-``yaml
+```yaml
 - name: Install Nextcloud client
   hosts: client
   collections:
