@@ -36,14 +36,21 @@
         state: present
       become: true
 
-    - name: Add Nextcloud repo using key from URL
+    - name: Download Nextcloud PPA GPG key
+      ansible.builtin.get_url:
+        url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469"
+        dest: /etc/apt/keyrings/nextcloud-devs-ppa.asc
+        mode: '0644'
+      become: true
+
+    - name: Add Nextcloud apt repository
       ansible.builtin.deb822_repository:
         name: nextcloud-devs-ppa
         types: [deb, deb-src]
         uris: "{{ nextcloud_client_ppaurl }}"
         suites: ["{{ dist_codename }}"]
         components: [main]
-        signed_by: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469"
+        signed_by: /etc/apt/keyrings/nextcloud-devs-ppa.asc
         state: present
         enabled: true
       become: true
