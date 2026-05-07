@@ -36,17 +36,24 @@
         state: present
       become: true
 
+    - name: Check if Nextcloud PPA binary keyring exists
+      ansible.builtin.stat:
+        path: /etc/apt/keyrings/nextcloud-devs-ppa.gpg
+      register: nextcloud_gpg_stat
+
     - name: Download Nextcloud PPA GPG key
       ansible.builtin.get_url:
         url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469"
         dest: /etc/apt/keyrings/nextcloud-devs-ppa.asc
         mode: '0644'
+      when: not nextcloud_gpg_stat.stat.exists
       become: true
 
     - name: Convert Nextcloud PPA GPG key to binary keyring
       ansible.builtin.command:
         cmd: gpg --dearmor -o /etc/apt/keyrings/nextcloud-devs-ppa.gpg /etc/apt/keyrings/nextcloud-devs-ppa.asc
         creates: /etc/apt/keyrings/nextcloud-devs-ppa.gpg
+      when: not nextcloud_gpg_stat.stat.exists
       become: true
 
     - name: Add Nextcloud apt repository
