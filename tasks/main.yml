@@ -4,31 +4,31 @@
     url: "{{ nextcloud_client_ppaurl }}/dists"
     return_content: true
   check_mode: false
-  register: ppa_listing
+  register: nextcloud_client_ppa_listing
 
 - name: Parse codename list from HTML
   ansible.builtin.set_fact:
-    ppa_codenames: "{{ ppa_listing.content | regex_findall('\\b([a-z]+?)/</a>') | unique }}"
+    nextcloud_client_ppa_codenames: "{{ nextcloud_client_ppa_listing.content | regex_findall('\\b([a-z]+?)/</a>') | unique }}"
 
 - name: Check if upstream-release file exists
   ansible.builtin.stat:
     path: /etc/upstream-release/lsb-release
-  register: upstream_release_file
+  register: nextcloud_client_upstream_release_file
 
 - name: Read upstream-release file if present
   ansible.builtin.slurp:
     path: /etc/upstream-release/lsb-release
-  register: upstream_release_raw
-  when: upstream_release_file.stat.exists
+  register: nextcloud_client_upstream_release_raw
+  when: nextcloud_client_upstream_release_file.stat.exists
 
 - name: Extract upstream codename
   ansible.builtin.set_fact:
-    dist_codename: >-
-      {{ (upstream_release_raw.content | b64decode |
+    nextcloud_client_dist_codename: >-
+      {{ (nextcloud_client_upstream_release_raw.content | b64decode |
           regex_search('^DISTRIB_CODENAME=.*', multiline=True) |
           regex_replace('^DISTRIB_CODENAME=', '')) | default(ansible_facts.distribution_release) }}
 - name: Install nextcloud-client only on supported distros
-  when: dist_codename in ppa_codenames
+  when: nextcloud_client_dist_codename in nextcloud_client_ppa_codenames
   block:
     - name: Ensure python3-debian is installed
       ansible.builtin.package:
@@ -39,21 +39,21 @@
     - name: Check if Nextcloud PPA binary keyring exists
       ansible.builtin.stat:
         path: /etc/apt/keyrings/nextcloud-devs-ppa.gpg
-      register: nextcloud_gpg_stat
+      register: nextcloud_client_gpg_stat
 
     - name: Download Nextcloud PPA GPG key
       ansible.builtin.get_url:
         url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1FCD77DD0DBEF5699AD2610160EE47FBAD3DD469"
         dest: /etc/apt/keyrings/nextcloud-devs-ppa.asc
         mode: '0644'
-      when: not nextcloud_gpg_stat.stat.exists
+      when: not nextcloud_client_gpg_stat.stat.exists
       become: true
 
     - name: Convert Nextcloud PPA GPG key to binary keyring
       ansible.builtin.command:
         cmd: gpg --dearmor -o /etc/apt/keyrings/nextcloud-devs-ppa.gpg /etc/apt/keyrings/nextcloud-devs-ppa.asc
         creates: /etc/apt/keyrings/nextcloud-devs-ppa.gpg
-      when: not nextcloud_gpg_stat.stat.exists
+      when: not nextcloud_client_gpg_stat.stat.exists
       become: true
 
     - name: Add Nextcloud apt repository
@@ -61,7 +61,7 @@
         name: nextcloud-devs-ppa
         types: [deb, deb-src]
         uris: "{{ nextcloud_client_ppaurl }}"
-        suites: ["{{ dist_codename }}"]
+        suites: ["{{ nextcloud_client_dist_codename }}"]
         components: [main]
         signed_by: /etc/apt/keyrings/nextcloud-devs-ppa.gpg
         state: present
@@ -74,7 +74,7 @@
 
     - name: Build list of nextcloud packages to install
       ansible.builtin.set_fact:
-        nextcloud_packages: >-
+        nextcloud_client_packages: >-
           {{
             ['nextcloud-client'] +
             (['nautilus-nextcloud'] if 'nautilus' in ansible_facts.packages else []) +
@@ -85,7 +85,7 @@
 
     - name: Install nextcloud client and extensions
       ansible.builtin.apt:
-        name: "{{ nextcloud_packages }}"
+        name: "{{ nextcloud_client_packages }}"
         state: present
         update_cache: true
       ignore_errors: "{{ ansible_check_mode }}"
